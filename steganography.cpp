@@ -57,9 +57,32 @@ void encode(string imageFilePath, string dataFilePath,
     return;
   }
   
+  //Load image file into uchar4 array
+  uchar4** imageData;
+  size_t numColsImage;
+  size_t numRowsImage;
+  loadImageRGBA(imageFilePath, imageData, &numRowsImage, &numColsImage);
+  
+  //Load data file into char* array
+  char* data;
+  streampos size = dataFile.tellg();
+  data = new char[size];
+  dataFile.seekg(0, ios::beg);
+  dataFile.read(data, size);
+  dataFile.close();
+  
+  //Encode the data
+  //encode();
+  
+  //Close all the files
   imageFile.close();
   dataFile.close();
   outputFile.close();
+  
+  //Clean up the memory
+  delete[] *imageData;
+  delete[] data;
+  
   return;
 }
 
