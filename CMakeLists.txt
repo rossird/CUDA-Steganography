@@ -9,7 +9,7 @@
 
 file( GLOB  hdr *.hpp *.h )
 file( GLOB  cu  *.cu)
-SET (stega_files steganography.cpp loadSaveImage.cpp)
+SET (stega_files main.cpp steganography.cpp loadSaveImage.cpp)
 
 CUDA_ADD_EXECUTABLE(stega ${stega_files} ${hdr} ${cu})
 
