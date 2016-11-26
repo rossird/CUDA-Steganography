@@ -58,10 +58,10 @@ void encode(string imageFilePath, string dataFilePath,
   }
   
   //Load image file into uchar4 array
-  uchar4** imageData;
+  uchar4* imageData;
   size_t numColsImage;
   size_t numRowsImage;
-  loadImageRGBA(imageFilePath, imageData, &numRowsImage, &numColsImage);
+  loadImageRGBA(imageFilePath, &imageData, &numRowsImage, &numColsImage);
   
   //Load data file into char* array
   char* data;
@@ -71,8 +71,18 @@ void encode(string imageFilePath, string dataFilePath,
   dataFile.read(data, size);
   dataFile.close();
   
+  //Create array for output image
+  uchar4* outputImageData = new uchar4[numRowsImage * numColsImage];
+  
   //Encode the data
-  //encode();
+  if(iType == PARALLEL) {
+    encode_parallel(imageData, outputImageData, data, numRowsImage, numColsImage);
+  } else if(iType == SERIAL) {
+    encode_serial(imageData, outputImageData, data, numRowsImage, numColsImage);
+  }
+  
+  //Turn uchar4 array into char* array
+  saveImageRGBA(outputImageData, numRowsImage, numColsImage, outputFilePath);
   
   //Close all the files
   imageFile.close();
@@ -80,10 +90,19 @@ void encode(string imageFilePath, string dataFilePath,
   outputFile.close();
   
   //Clean up the memory
-  delete[] *imageData;
+  delete[] imageData;
   delete[] data;
+  delete[] outputImageData;
   
   return;
+}
+
+void encode_serial(const uchar4* const h_sourceImg,
+                     const uchar4* const h_destImg,
+                     const char* const h_binData,
+                     const size_t numRowsSource, const size_t numColsSource)
+{
+
 }
 
 /**

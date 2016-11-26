@@ -16,6 +16,11 @@ void encode_parallel(const uchar4* const h_sourceImg,
                      const uchar4* const h_destImg,
                      const char* const h_binData,
                      const size_t numRowsSource, const size_t numColsSource);
+                     
+void encode_serial(const uchar4* const h_sourceImg,
+                     const uchar4* const h_destImg,
+                     const char* const h_binData,
+                     const size_t numRowsSource, const size_t numColsSource);
 
 /* Checks for valid files. Calls the appropriate decode implementation. */
 void decode(std::string imagFilePath, std::string encodedImagePath,

@@ -8,6 +8,7 @@
 void encode_parallel(const uchar4* const h_sourceImg,
                      const uchar4* const h_destImg,
                      const char* const h_binData,
-                     const size_t numRowsSource, const size_t numColsSource) {
+                     const size_t numRowsSource, const size_t numColsSource)
+{
                      
 }
