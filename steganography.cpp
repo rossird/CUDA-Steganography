@@ -65,20 +65,23 @@ void encode(string imageFilePath, string dataFilePath,
   
   //Load data file into char* array
   char* data;
+  dataFile.seekg(0, ios::end);
   streampos size = dataFile.tellg();
   data = new char[size];
   dataFile.seekg(0, ios::beg);
   dataFile.read(data, size);
   dataFile.close();
   
+  cout << "Datafile: " << dataFilePath << " Size: " << size << endl;
+  
   //Create array for output image
   uchar4* outputImageData = new uchar4[numRowsImage * numColsImage];
   
   //Encode the data
   if(iType == PARALLEL) {
-    encode_parallel(imageData, outputImageData, data, numRowsImage, numColsImage);
+    encode_parallel(imageData, outputImageData, data, size, numRowsImage, numColsImage);
   } else if(iType == SERIAL) {
-    encode_serial(imageData, outputImageData, data, numRowsImage, numColsImage);
+    encode_serial(imageData, outputImageData, data, size, numRowsImage, numColsImage);
   }
   
   //Turn uchar4 array into char* array
@@ -98,10 +101,41 @@ void encode(string imageFilePath, string dataFilePath,
 }
 
 void encode_serial(const uchar4* const h_sourceImg,
-                     const uchar4* const h_destImg,
-                     const char* const h_binData,
-                     const size_t numRowsSource, const size_t numColsSource)
+                   uchar4* const h_destImg,
+                   char* const h_binData,
+                   int numBytesData,
+                   size_t numRowsSource, size_t numColsSource)
 {
+
+  cout << "Running encode serial. NumBytes: " << numBytesData << endl;
+  
+  //Copy source image into destination image. Then modify destination image contents
+  memcpy(h_destImg, h_sourceImg, sizeof(uchar4) * numRowsSource * numColsSource);
+  
+  //Each byte of data is encoded in two bytes of the image
+  for(int i = 0; i < numBytesData; i++) {
+    char dataByte = h_binData[i];
+    
+    for(int j = 0; j < 8; j++) {
+      int channel = j % 4;
+      int pixel = j / 4;
+      char mask = (1 << j);
+      char bit = dataByte & mask;
+      cout << "channel: " << channel << " pixel: " << pixel << "bit: " << bit << endl;
+      
+      int imgIndex = i + pixel;
+      if(channel == 0)
+        h_destImg[imgIndex].x += bit;
+      else if(channel == 1)
+        h_destImg[imgIndex].y += bit;
+      else if(channel == 2)
+        h_destImg[imgIndex].z += bit;
+      else if(channel == 3)
+        h_destImg[imgIndex].w += bit;
+      
+    }
+
+  }
 
 }
 

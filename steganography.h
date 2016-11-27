@@ -13,14 +13,16 @@ void encode(std::string imageFilePath, std::string dataFilePath,
             std::string outputFilePath, ImplementationType iType);
             
 void encode_parallel(const uchar4* const h_sourceImg,
-                     const uchar4* const h_destImg,
+                     uchar4* const h_destImg,
                      const char* const h_binData,
-                     const size_t numRowsSource, const size_t numColsSource);
+                     int numBytesData,
+                     size_t numRowsSource, size_t numColsSource);
                      
 void encode_serial(const uchar4* const h_sourceImg,
-                     const uchar4* const h_destImg,
-                     const char* const h_binData,
-                     const size_t numRowsSource, const size_t numColsSource);
+                   uchar4* const h_destImg,
+                   char* const h_binData,
+                   int numBytesData,
+                   size_t numRowsSource, size_t numColsSource);
 
 /* Checks for valid files. Calls the appropriate decode implementation. */
 void decode(std::string imagFilePath, std::string encodedImagePath,
