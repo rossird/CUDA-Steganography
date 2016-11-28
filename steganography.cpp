@@ -120,19 +120,27 @@ void encode_serial(const uchar4* const h_sourceImg,
       int channel = j % 4;
       int pixel = j / 4;
       char mask = (1 << j);
-      char bit = dataByte & mask;
-      cout << "channel: " << channel << " pixel: " << pixel << "bit: " << bit << endl;
+      char bit = (dataByte & mask) >> j;
+      cout << "channel: " << channel << " pixel: " << pixel << "bit: " << int(bit) << endl;
       
       int imgIndex = i + pixel;
-      if(channel == 0)
+      if(channel == 0) {
+        cout << "old byte: " << int(h_destImg[imgIndex].x);
         h_destImg[imgIndex].x += bit;
-      else if(channel == 1)
+        cout << " new byte: " << int(h_destImg[imgIndex].x) << endl;
+      } else if(channel == 1) {
+        cout << "old byte: " << int(h_destImg[imgIndex].y);
         h_destImg[imgIndex].y += bit;
-      else if(channel == 2)
+        cout << " new byte: " << int(h_destImg[imgIndex].y) << endl;
+      } else if(channel == 2) {
+        cout << "old byte: " << int(h_destImg[imgIndex].z);
         h_destImg[imgIndex].z += bit;
-      else if(channel == 3)
+        cout << " new byte: " << int(h_destImg[imgIndex].z) << endl;
+      } else if(channel == 3) {
+        cout << "old byte: " << int(h_destImg[imgIndex].w);
         h_destImg[imgIndex].w += bit;
-      
+        cout << " new byte: " << int(h_destImg[imgIndex].w) << endl;
+      }
     }
 
   }
