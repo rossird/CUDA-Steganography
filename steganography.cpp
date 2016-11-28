@@ -101,6 +101,24 @@ void encode(string imageFilePath, string dataFilePath,
   return;
 }
 
+/*
+
+| 10 11 12 15 ; 11 255 12 0 |
+| 15 10 13 5  ; 15 14 19 80 |   Original image
+| 12 14 16 21 ; 14 18 10 16 |
+| 10 10 10 10 ; 10 10 10 10 |
+
++
+
+[ 1001 0110 1111 0000 1010 0101 0100 1100]  Data file
+
+= 
+
+| 11 11 12 16 ; 11 0  13 0  |
+| 15 11 14 6  ; 15 14 19 80 | Encoded image
+| 13 14 16 21 ; 14 19 10 17 |
+| 10 11 10 10 ; 11 11 10 10 |
+*/
 void encode_serial(const uchar4* const h_sourceImg,
                    uchar4* const h_destImg,
                    char* const h_binData,
@@ -130,9 +148,9 @@ void encode_serial(const uchar4* const h_sourceImg,
       int channel = j % 4;
       
       //Get current bit (starting at msb)
-      char mask = 1 << 7;
+      char mask = 1 << (7-j);
       char bit = (dataByte & mask) >> (7-j);
-      cout << "channel: " << channel << " pixel: " << pixel << " bit: " << int(bit) << endl;
+      cout << "channel: " << channel << " pixel: " << pixel << " bit: " << int(bit);
       
       //2 * current byte index plus current pixel for this byte (0 or 1)
       int imgIndex = 2*i + pixel;
@@ -143,19 +161,19 @@ void encode_serial(const uchar4* const h_sourceImg,
       // Channel 2: z
       // Channel 3: w
       if(channel == 0) {
-        cout << "old byte: " << int(h_destImg[imgIndex].x);
+        cout << " old byte: " << int(h_destImg[imgIndex].x);
         h_destImg[imgIndex].x += bit;
         cout << " new byte: " << int(h_destImg[imgIndex].x) << endl;
       } else if(channel == 1) {
-        cout << "old byte: " << int(h_destImg[imgIndex].y);
+        cout << " old byte: " << int(h_destImg[imgIndex].y);
         h_destImg[imgIndex].y += bit;
         cout << " new byte: " << int(h_destImg[imgIndex].y) << endl;
       } else if(channel == 2) {
-        cout << "old byte: " << int(h_destImg[imgIndex].z);
+        cout << " old byte: " << int(h_destImg[imgIndex].z);
         h_destImg[imgIndex].z += bit;
         cout << " new byte: " << int(h_destImg[imgIndex].z) << endl;
       } else if(channel == 3) {
-        cout << "old byte: " << int(h_destImg[imgIndex].w);
+        cout << " old byte: " << int(h_destImg[imgIndex].w);
         h_destImg[imgIndex].w += bit;
         cout << " new byte: " << int(h_destImg[imgIndex].w) << endl;
       }
