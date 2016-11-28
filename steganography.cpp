@@ -86,6 +86,7 @@ void encode(string imageFilePath, string dataFilePath,
   
   //Turn uchar4 array into char* array
   saveImageRGBA(outputImageData, numRowsImage, numColsImage, outputFilePath);
+  //saveImageRGBA(imageData, numRowsImage, numColsImage, outputFilePath);
   
   //Close all the files
   imageFile.close();
@@ -111,19 +112,36 @@ void encode_serial(const uchar4* const h_sourceImg,
   
   //Copy source image into destination image. Then modify destination image contents
   memcpy(h_destImg, h_sourceImg, sizeof(uchar4) * numRowsSource * numColsSource);
-  
-  //Each byte of data is encoded in two bytes of the image
+ 
+  //Each bit of data is encoded in 1 channel of a uchar4
+  //There are 4 channels in a uchar4.
+  //So 8 bits would require 2 uchar4, or 2 pixels.
+  //1 byte of data to 2 pixels.
+  //1 pixel is 4 uchars.
+  //1 uchar is 8 bytes.
+  //So 1 byte of data to 64 bytes of image.
   for(int i = 0; i < numBytesData; i++) {
     char dataByte = h_binData[i];
     
-    for(int j = 0; j < 8; j++) {
+    for(int j = 0; j < 8 * sizeof(char); j++) {
+    
+      //Calculate current channel and pixel
+      int pixel = j / 4;  //0-3 first pixel, 4-7 second pixel
       int channel = j % 4;
-      int pixel = j / 4;
-      char mask = (1 << j);
-      char bit = (dataByte & mask) >> j;
-      cout << "channel: " << channel << " pixel: " << pixel << "bit: " << int(bit) << endl;
       
-      int imgIndex = i + pixel;
+      //Get current bit (starting at msb)
+      char mask = 1 << 7;
+      char bit = (dataByte & mask) >> (7-j);
+      cout << "channel: " << channel << " pixel: " << pixel << " bit: " << int(bit) << endl;
+      
+      //2 * current byte index plus current pixel for this byte (0 or 1)
+      int imgIndex = 2*i + pixel;
+      
+      //Defined the relationship between channel number and x,y,z,w as:
+      // Channel 0: x
+      // Channel 1: y
+      // Channel 2: z
+      // Channel 3: w
       if(channel == 0) {
         cout << "old byte: " << int(h_destImg[imgIndex].x);
         h_destImg[imgIndex].x += bit;
