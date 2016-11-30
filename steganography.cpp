@@ -77,12 +77,17 @@ void encode(string imageFilePath, string dataFilePath,
   //Create array for output image
   uchar4* outputImageData = new uchar4[numRowsImage * numColsImage];
   
+  GpuTimer timer;
+  timer.Start();
   //Encode the data
   if(iType == PARALLEL) {
     encode_parallel(imageData, outputImageData, data, size, numRowsImage, numColsImage);
   } else if(iType == SERIAL) {
     encode_serial(imageData, outputImageData, data, size, numRowsImage, numColsImage);
   }
+  timer.Stop();
+  
+  cout << "Elapsed time: " << timer.Elapsed() << endl;
   
   //Turn uchar4 array into char* array
   saveImageRGBA(outputImageData, numRowsImage, numColsImage, outputFilePath);
@@ -150,7 +155,7 @@ void encode_serial(const uchar4* const h_sourceImg,
       //Get current bit (starting at msb)
       char mask = 1 << (7-j);
       char bit = (dataByte & mask) >> (7-j);
-      cout << "channel: " << channel << " pixel: " << pixel << " bit: " << int(bit);
+      //cout << "channel: " << channel << " pixel: " << pixel << " bit: " << int(bit);
       
       //2 * current byte index plus current pixel for this byte (0 or 1)
       int imgIndex = 2*i + pixel;
@@ -161,21 +166,21 @@ void encode_serial(const uchar4* const h_sourceImg,
       // Channel 2: z
       // Channel 3: w
       if(channel == 0) {
-        cout << " old byte: " << int(h_destImg[imgIndex].x);
+        //cout << " old byte: " << int(h_destImg[imgIndex].x);
         h_destImg[imgIndex].x += bit;
-        cout << " new byte: " << int(h_destImg[imgIndex].x) << endl;
+        //cout << " new byte: " << int(h_destImg[imgIndex].x) << endl;
       } else if(channel == 1) {
-        cout << " old byte: " << int(h_destImg[imgIndex].y);
+        //cout << " old byte: " << int(h_destImg[imgIndex].y);
         h_destImg[imgIndex].y += bit;
-        cout << " new byte: " << int(h_destImg[imgIndex].y) << endl;
+        //cout << " new byte: " << int(h_destImg[imgIndex].y) << endl;
       } else if(channel == 2) {
-        cout << " old byte: " << int(h_destImg[imgIndex].z);
+        //cout << " old byte: " << int(h_destImg[imgIndex].z);
         h_destImg[imgIndex].z += bit;
-        cout << " new byte: " << int(h_destImg[imgIndex].z) << endl;
+        //cout << " new byte: " << int(h_destImg[imgIndex].z) << endl;
       } else if(channel == 3) {
-        cout << " old byte: " << int(h_destImg[imgIndex].w);
+        //cout << " old byte: " << int(h_destImg[imgIndex].w);
         h_destImg[imgIndex].w += bit;
-        cout << " new byte: " << int(h_destImg[imgIndex].w) << endl;
+        //cout << " new byte: " << int(h_destImg[imgIndex].w) << endl;
       }
     }
 

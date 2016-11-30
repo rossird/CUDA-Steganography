@@ -52,6 +52,44 @@ __global__ void encode_per_pixel_kernel(uchar4* const d_destImg,
   
 }
 
+
+//1 channel per bit of data
+//8 channels per byte of data
+__global__ void encode_per_channel_kernel(uchar4* const d_destImg,
+                              const char* const d_binData,
+                              int numBytesData)
+{
+  int idx = threadIdx.x + blockDim.x * blockIdx.x;
+  if(idx >= 8 * numBytesData)
+    return;
+    
+  //4 channels
+  int channel = idx % 4;
+  int pixel = idx / 4;
+  
+  //Pixel 5 is at byte 3.
+  int dataStart = pixel / 2 + 1;
+  int nibble = pixel % 2;
+  
+  char dataByte = d_binData[dataStart];
+  
+  //Get the bit
+  int offset = (7 - 1 * nibble);
+  char mask = 1 << offset;
+  char bit = (dataByte & mask) >> offset;
+  
+  if(channel == 0) {
+    d_destImg[pixel].x += bit;
+  } else if(channel == 1){ 
+    d_destImg[pixel].y += bit;
+  } else if(channel == 2){
+    d_destImg[pixel].z += bit;
+  } else if(channel == 3){
+    d_destImg[pixel].w += bit;
+  }
+ 
+}
+
 /**
 
 | 10 11 12 15 ; 11 255 12 0 |
@@ -87,15 +125,25 @@ void encode_parallel(const uchar4* const h_sourceImg,
   cudaMemcpy(d_destImg, h_sourceImg, sizeof(uchar4) * numRowsSource * numColsSource, cudaMemcpyHostToDevice); 
   cudaMemcpy(d_binData, h_binData, numBytesData, cudaMemcpyHostToDevice);
 
-  //Execute 1 thread per pixel of output image.
-  //This means 1 thread per 4 bits of data.
-  int numThreads = ceil(numBytesData / 4.0);
-  int blockSize = 1024;
-  int numBlocks = ceil((float)numThreads / blockSize);
+  //Each thread handles 1 pixel
+  //This means 1 thread per 4 bits of data (2 threads per byte)
+  int numThreads = numBytesData * 2.0;
+  int threadsPerBlock = 1024;
+  int numBlocks = ceil((float)numThreads / threadsPerBlock);
+  //cout << "numBlocks: " << numBlocks << " blockSize: " << blockSize << " numThreads: " << numThreads << endl;
   
-  cout << "numBlocks: " << numBlocks << " blockSize: " << blockSize << " numThreads: " << numThreads << endl;
+  encode_per_pixel_kernel<<<numBlocks, threadsPerBlock>>>(d_destImg, d_binData, numBytesData);
   
-  encode_per_pixel_kernel<<<numBlocks, numThreads>>>(d_destImg, d_binData, numBytesData);
+  
+  //Each thread handles 1 channel of 1 pixel
+  //This means 1 thread per bit of data (8 threads per byte)
+  numThreads = numBytesData * 8;
+  threadsPerBlock = 1024;
+  numBlocks = ceil((float)numThreads / threadsPerBlock);
+  
+  cout << "numBlocks: " << numBlocks << " blockSize: " << threadsPerBlock << " numThreads: " << numThreads << endl;
+  
+  //encode_per_channel_kernel<<<numBlocks, threadsPerBlock>>>(d_destImg, d_binData, numBytesData);
   
   cudaMemcpy(h_destImg, d_destImg, sizeof(uchar4) * numRowsSource * numColsSource, cudaMemcpyDeviceToHost);
   
