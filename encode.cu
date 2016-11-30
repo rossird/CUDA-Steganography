@@ -130,18 +130,14 @@ void encode_parallel(const uchar4* const h_sourceImg,
   int numThreads = numBytesData * 2.0;
   int threadsPerBlock = 1024;
   int numBlocks = ceil((float)numThreads / threadsPerBlock);
-  //cout << "numBlocks: " << numBlocks << " blockSize: " << blockSize << " numThreads: " << numThreads << endl;
   
   encode_per_pixel_kernel<<<numBlocks, threadsPerBlock>>>(d_destImg, d_binData, numBytesData);
-  
   
   //Each thread handles 1 channel of 1 pixel
   //This means 1 thread per bit of data (8 threads per byte)
   numThreads = numBytesData * 8;
   threadsPerBlock = 1024;
   numBlocks = ceil((float)numThreads / threadsPerBlock);
-  
-  cout << "numBlocks: " << numBlocks << " blockSize: " << threadsPerBlock << " numThreads: " << numThreads << endl;
   
   //encode_per_channel_kernel<<<numBlocks, threadsPerBlock>>>(d_destImg, d_binData, numBytesData);
   
