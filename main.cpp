@@ -50,17 +50,18 @@ int main(int argc, char* argv[])
     //Collect input args
     if (argc > 5) {
       string iTypeString(argv[5]);
-      if(iTypeString.compare("-parallel") == 0) {
+      if(iTypeString.compare("-parallel") == 0 ||
+         iTypeString.compare("-p") == 0) {
         implementation = PARALLEL;
-      } else if(iTypeString.compare("-serial") == 0) {
+      } else if(iTypeString.compare("-serial") == 0 ||
+                iTypeString.compare("-s") == 0) {
         implementation = SERIAL;
-      } else {
-        implementation = PARALLEL;
       }
     }
    
     //Encode or decode
-    if (input1.compare("-encode") == 0) {
+    if (input1.compare("-encode") == 0 ||
+        input1.compare("-e") == 0) {
  
       string imageFilePath(argv[2]);
       string dataFilePath(argv[3]);
@@ -68,7 +69,8 @@ int main(int argc, char* argv[])
       
       encode(imageFilePath, dataFilePath, outputFilePath, implementation);
       
-    } else if(input1.compare("-decode") == 0) {
+    } else if(input1.compare("-decode") == 0 ||
+              input1.compare("-d") == 0) {
 
       string imageFilePath(argv[2]);
       string encodedImagePath(argv[3]);
