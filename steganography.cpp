@@ -191,7 +191,44 @@ void encode_serial(const uchar4* const h_sourceImg,
 /**
  *
  */
-void decode(string imagFilePath, string encodedImagePath, string outputFilePath, ImplementationType iType) {
+void decode(string imageFilePath, string encodedImagePath, string outputFilePath, ImplementationType iType) {
+
+  //Print some useful information
+  cout << "Decoing\n";
+  if (iType == PARALLEL) {
+    cout << "Using parallel implementation.\n";
+  } else if (iType == SERIAL) {
+    cout << "Using serial implementation.\n";
+  } else {
+    cout << "Uknown implementation.\n";
+    return;
+  }
+  
+  //Open file stream
+  fstream origImageFile(imageFilePath.c_str(), fstream::in | fstream::binary);
+  fstream encodedImageFile(encodedImagePath.c_str(), fstream::in | fstream::binary);
+  fstream outputFile(outputFilePath.c_str(), fstream::out | fstream::binary);
+  
+  //Check for valid files
+  if(!origImageFile.good()) {
+    cout << "Bad image file path " << imageFilePath << endl;
+    return;
+  }
+  if(!encodedImageFile.good()) {
+    origImageFile.close();
+    cout << "Bad data file path " << encodedImagePath << endl;
+    return;
+  }
+  if(!outputFile.good()) {
+    origImageFile.close();
+    encodedImageFile.close();
+    cout << "Bad output file path " << outputFilePath << endl;
+    return;
+  }
+  
+  char* data;
+  
+  
   return;
 }
 
