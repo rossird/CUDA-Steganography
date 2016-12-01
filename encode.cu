@@ -9,25 +9,32 @@
 using namespace std;
 
 //Execute 1 thread per pixel of output image.
-//Requires no atomics
+//Each thread handles all four channels of the output pixels
 __global__ void encode_per_pixel_kernel(uchar4* const d_destImg,
                               const char* const d_binData,
                               int numBytesData)
 {
+  //Get pixel index
+  //Theres two pixels per byte of data
+  //Thread 2 would be pixel 2 and working on byte 1 nibble 0
+  //Thread 3 would be pixel 3 and working on byte 1 nibble 1
+  //Thread 4 would be pixel 4 and working on byte 2 nibble 0
+  //Thread 5 would be pixel 5 and working on byte 2 nibble 1
   int pixel = threadIdx.x + blockDim.x * blockIdx.x;
-  if(pixel >= numBytesData)
+  if(pixel >= 2 * numBytesData)
     return;
   
-  //Pixel 5 is at byte 3.
-  int dataStart = pixel / 2 + 1;
+  //Calculate which nibble (0 or 1) in the byte
+  //and which byte (0 to numBytesData)
+  int byteIndex = pixel / 2;
   int nibble = pixel % 2;
 
-  char dataByte = d_binData[dataStart];
+  char dataByte = d_binData[byteIndex];
   
   //Can't do next part in a loop because we have to access differently (x,y,z,w)
   
   //Channel 0 (first bit in the nibble)
-  int offset = (7 - 1 * nibble);
+  int offset = (7 - 4 *nibble);
   char mask = 1 << offset;
   char bit = (dataByte & mask) >> offset;
   d_destImg[pixel].x += bit;
@@ -59,22 +66,29 @@ __global__ void encode_per_channel_kernel(uchar4* const d_destImg,
                               const char* const d_binData,
                               int numBytesData)
 {
+  //1 thread per bit of data
+  //Thread 0 works on pixel 0 channel 0 byte 0 nibble 0 bit 0
+  //Thread 1 works on pixel 0 channel 1 byte 0 nibble 0 bit 1
+  //Thread 2 works on pixel 0 channel 2 byte 0 nibble 0 bit 2
+  //Thread 3 works on pixel 0 channel 3 byte 0 nibble 0 bit 3
+  //Thread 4 works on pixel 1 channel 0 byte 0 nubble 1 bit 0
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
   if(idx >= 8 * numBytesData)
     return;
     
-  //4 channels
+  //Calculate channel (0-4) and pixel (0 - 2*numBytes - 1)
   int channel = idx % 4;
   int pixel = idx / 4;
   
-  //Pixel 5 is at byte 3.
-  int dataStart = pixel / 2 + 1;
+  //Calculate which nibble (0 or 1) in the byte
+  //and which byte (0 to numBytesData - 1)
+  int byteIndex = pixel / 2;
   int nibble = pixel % 2;
   
-  char dataByte = d_binData[dataStart];
+  char dataByte = d_binData[byteIndex];
   
   //Get the bit
-  int offset = (7 - 1 * nibble);
+  int offset = channel + 4 * nibble;
   char mask = 1 << offset;
   char bit = (dataByte & mask) >> offset;
   
@@ -130,6 +144,8 @@ void encode_parallel(const uchar4* const h_sourceImg,
   int numThreads = numBytesData * 2.0;
   int threadsPerBlock = 1024;
   int numBlocks = ceil((float)numThreads / threadsPerBlock);
+  
+  cout << "numThreads: " << numThreads << " threadsPerBlock: " << threadsPerBlock << " numBlocks: " << numBlocks << endl;
   
   encode_per_pixel_kernel<<<numBlocks, threadsPerBlock>>>(d_destImg, d_binData, numBytesData);
   
