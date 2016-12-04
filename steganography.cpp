@@ -130,8 +130,6 @@ void encode_serial(const uchar4* const h_sourceImg,
                    int numBytesData,
                    size_t numRowsSource, size_t numColsSource)
 {
-
-  cout << "Running encode serial. NumBytes: " << numBytesData << endl;
   
   //Copy source image into destination image. Then modify destination image contents
   memcpy(h_destImg, h_sourceImg, sizeof(uchar4) * numRowsSource * numColsSource);

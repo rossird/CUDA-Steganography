@@ -55,7 +55,7 @@ __global__ void encode_per_pixel_kernel(uchar4* const d_destImg,
   offset -= 1;
   mask >>= 1;
   bit = (dataByte & mask) >> offset;
-  d_destImg[pixel].z += bit;
+  d_destImg[pixel].w += bit;
   
 }
 
