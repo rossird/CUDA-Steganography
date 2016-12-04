@@ -11,8 +11,8 @@ using namespace std;
 //Execute 1 thread per pixel of output image.
 //Each thread handles all four channels of the output pixels
 __global__ void encode_per_pixel_kernel(uchar4* const d_destImg,
-                              const char* const d_binData,
-                              int numBytesData)
+                                        const char* const d_binData,
+                                        int numBytesData)
 {
   //Get pixel index
   //Theres two pixels per byte of data
@@ -28,34 +28,32 @@ __global__ void encode_per_pixel_kernel(uchar4* const d_destImg,
   //and which byte (0 to numBytesData)
   int byteIndex = pixel / 2;
   int nibble = pixel % 2;
-
   char dataByte = d_binData[byteIndex];
-  
-  //Can't do next part in a loop because we have to access differently (x,y,z,w)
+ 
+  //Let's work with a local copy. We only need two global accesses this way.
+  uchar4 outputPixel = d_destImg[pixel];
   
   //Channel 0 (first bit in the nibble)
-  int offset = (7 - 4 *nibble);
-  char mask = 1 << offset;
-  char bit = (dataByte & mask) >> offset;
-  d_destImg[pixel].x += bit;
+  int offset = (7 - 4 * nibble);
+  bool bit = (dataByte >> offset) & 1;
+  outputPixel.x = outputPixel.x & ~(1 << offset) | (bit << offset);
   
   //Channel 1 (2nd bit)
   offset -= 1;
-  mask >>= 1;
-  bit = (dataByte & mask) >> offset;
-  d_destImg[pixel].y += bit;
+  bit = (dataByte >> offset) & 1;
+  outputPixel.y = outputPixel.y & ~(1 << offset) | (bit << offset);
   
   //Channel 2 (3rd bit)
   offset -= 1;
-  mask >>= 1;
-  bit = (dataByte & mask) >> offset;
-  d_destImg[pixel].z += bit;
+  bit = (dataByte >> offset) & 1;
+  outputPixel.z = outputPixel.z & ~(1 << offset) | (bit << offset);
   
-  //Channel 3 (4th bit)
+  //Channel 3 (4th bit) This is the alpha channel
   offset -= 1;
-  mask >>= 1;
-  bit = (dataByte & mask) >> offset;
-  d_destImg[pixel].w += bit;
+  bit = (dataByte >> offset) & 1;
+  outputPixel.w = outputPixel.w & ~(1 << offset) | (bit << offset);
+  
+  d_destImg[pixel] = outputPixel;
   
 }
 
