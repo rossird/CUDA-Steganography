@@ -25,8 +25,8 @@ void encode_serial(const uchar4* const h_sourceImg,
                    size_t numRowsSource, size_t numColsSource);
 
 /* Checks for valid files. Calls the appropriate decode implementation. */
-void decode(std::string imagFilePath, std::string encodedImagePath,
-            std::string outputFilePath, ImplementationType iType);
+void decode(std::string encodedImagePath, std::string outputFilePath,
+            ImplementationType iType);
 
 
 void loadImageRGBA(const std::string &filename,

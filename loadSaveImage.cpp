@@ -84,10 +84,10 @@ void saveImageRGBA(const uchar4* const image,
   sizes[0] = numRows;
   sizes[1] = numCols;
   cv::Mat imageRGBA(2, sizes, CV_8UC4, (void *)image);
-  cv::Mat imageOutputBGR;
-  cv::cvtColor(imageRGBA, imageOutputBGR, CV_RGBA2BGR);
+  cv::Mat imageOutputBGRA;
+  cv::cvtColor(imageRGBA, imageOutputBGRA, CV_RGBA2BGRA);
   //output the image
-  cv::imwrite(output_file.c_str(), imageOutputBGR);
+  cv::imwrite(output_file.c_str(), imageOutputBGRA);
 }
 
 //output an exr file

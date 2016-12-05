@@ -36,22 +36,22 @@ __global__ void encode_per_pixel_kernel(uchar4* const d_destImg,
   //Channel 0 (first bit in the nibble)
   int offset = (7 - 4 * nibble);
   bool bit = (dataByte >> offset) & 1;
-  outputPixel.x = outputPixel.x & ~(1 << offset) | (bit << offset);
+  outputPixel.x = outputPixel.x & ~1 | bit;
   
   //Channel 1 (2nd bit)
   offset -= 1;
   bit = (dataByte >> offset) & 1;
-  outputPixel.y = outputPixel.y & ~(1 << offset) | (bit << offset);
+  outputPixel.y = outputPixel.y & ~1 | bit;
   
   //Channel 2 (3rd bit)
   offset -= 1;
   bit = (dataByte >> offset) & 1;
-  outputPixel.z = outputPixel.z & ~(1 << offset) | (bit << offset);
+  outputPixel.z = outputPixel.z & ~1 | bit;
   
   //Channel 3 (4th bit) This is the alpha channel
   offset -= 1;
   bit = (dataByte >> offset) & 1;
-  outputPixel.w = outputPixel.w & ~(1 << offset) | (bit << offset);
+  outputPixel.w = outputPixel.w & ~1 | bit;
   
   d_destImg[pixel] = outputPixel;
   
@@ -60,6 +60,7 @@ __global__ void encode_per_pixel_kernel(uchar4* const d_destImg,
 
 //1 channel per bit of data
 //8 channels per byte of data
+//This calls requires two global memory accesses
 __global__ void encode_per_channel_kernel(uchar4* const d_destImg,
                               const char* const d_binData,
                               int numBytesData)
@@ -82,44 +83,62 @@ __global__ void encode_per_channel_kernel(uchar4* const d_destImg,
   //and which byte (0 to numBytesData - 1)
   int byteIndex = pixel / 2;
   int nibble = pixel % 2;
-  
   char dataByte = d_binData[byteIndex];
   
+  //Let's work with a local copy. 
+  uchar4 outputPixel = d_destImg[pixel];
+  
   //Get the bit
-  int offset = channel + 4 * nibble;
-  char mask = 1 << offset;
-  char bit = (dataByte & mask) >> offset;
+  //Offset should be 7 for channel 0, nibble 0
+  //Offset should be 0 for channel 3, nibble 1
+  int offset = (7 - 4 * nibble) - channel;
+  bool bit = (dataByte >> offset) & 1;
   
   if(channel == 0) {
-    d_destImg[pixel].x += bit;
+    outputPixel.x = outputPixel.x & ~1 | bit;
   } else if(channel == 1){ 
-    d_destImg[pixel].y += bit;
+    outputPixel.y = outputPixel.y & ~1 | bit;
   } else if(channel == 2){
-    d_destImg[pixel].z += bit;
+    outputPixel.z = outputPixel.z & ~1 | bit;
   } else if(channel == 3){
-    d_destImg[pixel].w += bit;
+    outputPixel.w = outputPixel.w & ~1 | bit;
   }
+  
+  d_destImg[pixel] = outputPixel;
  
 }
 
 /**
 
-| 10 11 12 15 ; 11 255 12 0 |
-| 15 10 13 5  ; 15 14 19 80 | Original image (each set of 4 is 1 pixel).
-| 12 14 16 21 ; 14 18 10 16 |
-| 10 10 10 10 ; 10 10 10 10 |
+    | 10 11 12 15 ; 11 255 12 0 |
+    | 15 10 13 5  ; 15 14 19 80 | Original image (each set of 4 is 1 pixel).
+    | 12 14 16 21 ; 14 18 10 16 |
+    | 11 11 11 11 ; 10 10 10 10 |
 
-+
+    and
 
-[ 1001 0110 1111 0000 1010 0101 0100 1100]  Data file
+    [ 1001 0110 1111 0000 1010 0101 0100 1100]  Data file
 
-= 
+    = 
 
-| 11 11 12 16 ; 11 0  13 0  |
-| 15 11 14 6  ; 15 14 19 80 | Encoded image
-| 13 14 16 21 ; 14 19 10 17 |
-| 10 11 10 10 ; 11 11 10 10 |
- 
+    | 11 10 12 15 ; 10 255 13 0  |
+    | 15 11 13 5  ; 14 14  18 80 | Encoded image
+    | 13 14 17 20 ; 14 19  10 17 |
+    | 11 10 11 11 ; 11 11  10 10 |
+    
+    To encode the data, we will use the least significant bit approach by
+    modifying the LSB of each channel of each pixel of th input image. The
+    LSB will match the corresponding bit of the input data. The data can be
+    decoded by reading the LSB from the encoded image.
+    
+    For example, if the channel byte is 0001 1001 (value of 25) and we want to
+    encode a 1, the byte would remain the same. If we want to encode a 0, the
+    byte would become 0001 1000 (value of 24).
+    
+    If the channel byte is 0010 1110 (value of 46), and we want to encode a 1,
+    then the byte would become 0010 1111 (value of 47). If we want to encode a
+    0, then the byte would remain the same.
+    
  */
 void encode_parallel(const uchar4* const h_sourceImg,
                      uchar4* const h_destImg,
@@ -139,21 +158,19 @@ void encode_parallel(const uchar4* const h_sourceImg,
 
   //Each thread handles 1 pixel
   //This means 1 thread per 4 bits of data (2 threads per byte)
-  int numThreads = numBytesData * 2.0;
-  int threadsPerBlock = 1024;
-  int numBlocks = ceil((float)numThreads / threadsPerBlock);
+  //int numThreads = numBytesData * 2.0;
+  //int threadsPerBlock = 1024;
+  //int numBlocks = ceil((float)numThreads / threadsPerBlock);
   
-  cout << "numThreads: " << numThreads << " threadsPerBlock: " << threadsPerBlock << " numBlocks: " << numBlocks << endl;
-  
-  encode_per_pixel_kernel<<<numBlocks, threadsPerBlock>>>(d_destImg, d_binData, numBytesData);
+  //encode_per_pixel_kernel<<<numBlocks, threadsPerBlock>>>(d_destImg, d_binData, numBytesData);
   
   //Each thread handles 1 channel of 1 pixel
   //This means 1 thread per bit of data (8 threads per byte)
-  numThreads = numBytesData * 8;
-  threadsPerBlock = 1024;
-  numBlocks = ceil((float)numThreads / threadsPerBlock);
+  int numThreads = numBytesData * 8;
+  int threadsPerBlock = 1024;
+  int numBlocks = ceil((float)numThreads / threadsPerBlock);
   
-  //encode_per_channel_kernel<<<numBlocks, threadsPerBlock>>>(d_destImg, d_binData, numBytesData);
+  encode_per_channel_kernel<<<numBlocks, threadsPerBlock>>>(d_destImg, d_binData, numBytesData);
   
   cudaMemcpy(h_destImg, d_destImg, sizeof(uchar4) * numRowsSource * numColsSource, cudaMemcpyDeviceToHost);
   

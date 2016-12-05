@@ -38,45 +38,63 @@ int main(int argc, char* argv[])
       return 0;
     }
   
-    //Check number of input arguments
-    if(argc < 5) {
-      cout << "Not enough input arguments\n";
-      print_help();
-      return 0;
-    }
-    
-    ImplementationType implementation = PARALLEL; //Default
-    
-    //Collect input args
-    if (argc > 5) {
-      string iTypeString(argv[5]);
-      if(iTypeString.compare("-parallel") == 0 ||
-         iTypeString.compare("-p") == 0) {
-        implementation = PARALLEL;
-      } else if(iTypeString.compare("-serial") == 0 ||
-                iTypeString.compare("-s") == 0) {
-        implementation = SERIAL;
-      }
-    }
-   
     //Encode or decode
     if (input1.compare("-encode") == 0 ||
         input1.compare("-e") == 0) {
- 
+        
+      //Check number of input arguments
+      if(argc < 5) {
+        cout << "Not enough input arguments\n";
+        print_help();
+        return 0;
+      }
+      
+      ImplementationType implementation = PARALLEL; //Default
+      
+      //Collect input args
       string imageFilePath(argv[2]);
       string dataFilePath(argv[3]);
       string outputFilePath(argv[4]);
+      if (argc > 5) {
+        string iTypeString(argv[5]);
+        if(iTypeString.compare("-parallel") == 0 ||
+           iTypeString.compare("-p") == 0) {
+          implementation = PARALLEL;
+        } else if(iTypeString.compare("-serial") == 0 ||
+                  iTypeString.compare("-s") == 0) {
+          implementation = SERIAL;
+        }
+      }
       
       encode(imageFilePath, dataFilePath, outputFilePath, implementation);
       
     } else if(input1.compare("-decode") == 0 ||
               input1.compare("-d") == 0) {
-
-      string imageFilePath(argv[2]);
-      string encodedImagePath(argv[3]);
-      string outputFilePath(argv[4]);
+              
+      //Check number of input arguments
+      if(argc < 4) {
+        cout << "Not enough input arguments\n";
+        print_help();
+        return 0;
+      }
       
-      decode(imageFilePath, encodedImagePath, outputFilePath, implementation);
+      ImplementationType implementation = PARALLEL; //Default
+      
+      //Collect input args
+      string encodedImagePath(argv[2]);
+      string outputFilePath(argv[3]);
+      if (argc > 4) {
+        string iTypeString(argv[4]);
+        if(iTypeString.compare("-parallel") == 0 ||
+           iTypeString.compare("-p") == 0) {
+          implementation = PARALLEL;
+        } else if(iTypeString.compare("-serial") == 0 ||
+                  iTypeString.compare("-s") == 0) {
+          implementation = SERIAL;
+        }
+      }
+      
+      decode(encodedImagePath, outputFilePath, implementation);
       
     } else {
       cout << "Invalid option: " << input1 << endl;

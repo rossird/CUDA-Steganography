@@ -66,13 +66,26 @@ void encode(string imageFilePath, string dataFilePath,
   //Load data file into char* array
   char* data;
   dataFile.seekg(0, ios::end);
-  streampos size = dataFile.tellg();
-  data = new char[size];
+  streampos dataFileSize = dataFile.tellg();
+  data = new char[dataFileSize];
   dataFile.seekg(0, ios::beg);
-  dataFile.read(data, size);
+  dataFile.read(data, dataFileSize);
   dataFile.close();
   
-  cout << "Datafile: " << dataFilePath << " Size: " << size << endl;
+  //Check if file sizes work
+  //Data file size * 8 must be <= size of image
+  int imageFileSize = numRowsImage * numColsImage * 4;
+  if(dataFileSize * 8 > imageFileSize) {
+    cout << "Data file is too large for the input image.\n";
+    cout << "Data file must be less than or equal 1/8 of image size\n";
+    cout << "Data file size: " << dataFileSize << endl;
+    cout << "Image file size: " << imageFileSize << endl;
+    
+    delete[] imageData;
+    delete[] data;
+    
+    return;
+  } 
   
   //Create array for output image
   uchar4* outputImageData = new uchar4[numRowsImage * numColsImage];
@@ -81,9 +94,9 @@ void encode(string imageFilePath, string dataFilePath,
   timer.Start();
   //Encode the data
   if(iType == PARALLEL) {
-    encode_parallel(imageData, outputImageData, data, size, numRowsImage, numColsImage);
+    encode_parallel(imageData, outputImageData, data, dataFileSize, numRowsImage, numColsImage);
   } else if(iType == SERIAL) {
-    encode_serial(imageData, outputImageData, data, size, numRowsImage, numColsImage);
+    encode_serial(imageData, outputImageData, data, dataFileSize, numRowsImage, numColsImage);
   }
   timer.Stop();
   
@@ -108,21 +121,35 @@ void encode(string imageFilePath, string dataFilePath,
 
 /*
 
-| 10 11 12 15 ; 11 255 12 0 |
-| 15 10 13 5  ; 15 14 19 80 |   Original image
-| 12 14 16 21 ; 14 18 10 16 |
-| 10 10 10 10 ; 10 10 10 10 |
+    | 10 11 12 15 ; 11 255 12 0 |
+    | 15 10 13 5  ; 15 14 19 80 | Original image (each set of 4 is 1 pixel).
+    | 12 14 16 21 ; 14 18 10 16 |
+    | 11 11 11 11 ; 10 10 10 10 |
 
-+
+    and
 
-[ 1001 0110 1111 0000 1010 0101 0100 1100]  Data file
+    [ 1001 0110 1111 0000 1010 0101 0100 1100]  Data file
 
-= 
+    = 
 
-| 11 11 12 16 ; 11 0  13 0  |
-| 15 11 14 6  ; 15 14 19 80 | Encoded image
-| 13 14 16 21 ; 14 19 10 17 |
-| 10 11 10 10 ; 11 11 10 10 |
+    | 11 10 12 15 ; 10 255 13 0  |
+    | 15 11 13 5  ; 14 14  18 80 | Encoded image
+    | 13 14 17 20 ; 14 19  10 17 |
+    | 11 10 11 11 ; 11 11  10 10 |
+    
+    To encode the data, we will use the least significant bit approach by
+    modifying the LSB of each channel of each pixel of th input image. The
+    LSB will match the corresponding bit of the input data. The data can be
+    decoded by reading the LSB from the encoded image.
+    
+    For example, if the channel byte is 0001 1001 (value of 25) and we want to
+    encode a 1, the byte would remain the same. If we want to encode a 0, the
+    byte would become 0001 1000 (value of 24).
+    
+    If the channel byte is 0010 1110 (value of 46), and we want to encode a 1,
+    then the byte would become 0010 1111 (value of 47). If we want to encode a
+    0, then the byte would remain the same.
+    
 */
 void encode_serial(const uchar4* const h_sourceImg,
                    uchar4* const h_destImg,
@@ -135,12 +162,7 @@ void encode_serial(const uchar4* const h_sourceImg,
   memcpy(h_destImg, h_sourceImg, sizeof(uchar4) * numRowsSource * numColsSource);
  
   //Each bit of data is encoded in 1 channel of a uchar4
-  //There are 4 channels in a uchar4.
-  //So 8 bits would require 2 uchar4, or 2 pixels.
-  //1 byte of data to 2 pixels.
-  //1 pixel is 4 uchars.
-  //1 uchar is 8 bytes.
-  //So 1 byte of data to 64 bytes of image.
+  //So 1 bit corresponds to 1 byte
   for(int i = 0; i < numBytesData; i++) {
     char dataByte = h_binData[i];
     
@@ -150,10 +172,11 @@ void encode_serial(const uchar4* const h_sourceImg,
       int pixel = j / 4;  //0-3 first pixel, 4-7 second pixel
       int channel = j % 4;
       
-      //Get current bit (starting at msb)
-      char mask = 1 << (7-j);
-      char bit = (dataByte & mask) >> (7-j);
-      //cout << "channel: " << channel << " pixel: " << pixel << " bit: " << int(bit);
+      //Get the bit (start at MSB)
+      //Offset should be 7 for channel 0, nibble 0 (pixel 0)
+      //Offset should be 0 for channel 3, nibble 1 (pixel 1)
+      int offset = (7 - 4 * pixel) - channel;
+      bool bit = (dataByte >> offset) & 1;
       
       //2 * current byte index plus current pixel for this byte (0 or 1)
       int imgIndex = 2*i + pixel;
@@ -164,21 +187,13 @@ void encode_serial(const uchar4* const h_sourceImg,
       // Channel 2: z
       // Channel 3: w
       if(channel == 0) {
-        //cout << " old byte: " << int(h_destImg[imgIndex].x);
-        h_destImg[imgIndex].x += bit;
-        //cout << " new byte: " << int(h_destImg[imgIndex].x) << endl;
+        h_destImg[imgIndex].x = h_destImg[imgIndex].x & ~1 | bit;
       } else if(channel == 1) {
-        //cout << " old byte: " << int(h_destImg[imgIndex].y);
-        h_destImg[imgIndex].y += bit;
-        //cout << " new byte: " << int(h_destImg[imgIndex].y) << endl;
+        h_destImg[imgIndex].y = h_destImg[imgIndex].y & ~1 | bit;
       } else if(channel == 2) {
-        //cout << " old byte: " << int(h_destImg[imgIndex].z);
-        h_destImg[imgIndex].z += bit;
-        //cout << " new byte: " << int(h_destImg[imgIndex].z) << endl;
+        h_destImg[imgIndex].z = h_destImg[imgIndex].z & ~1 | bit;
       } else if(channel == 3) {
-        //cout << " old byte: " << int(h_destImg[imgIndex].w);
-        h_destImg[imgIndex].w += bit;
-        //cout << " new byte: " << int(h_destImg[imgIndex].w) << endl;
+        h_destImg[imgIndex].w = h_destImg[imgIndex].w & ~1 | bit;
       }
     }
 
@@ -189,7 +204,7 @@ void encode_serial(const uchar4* const h_sourceImg,
 /**
  *
  */
-void decode(string imageFilePath, string encodedImagePath, string outputFilePath, ImplementationType iType) {
+void decode(string encodedImagePath, string outputFilePath, ImplementationType iType) {
 
   //Print some useful information
   cout << "Decoing\n";
@@ -203,22 +218,15 @@ void decode(string imageFilePath, string encodedImagePath, string outputFilePath
   }
   
   //Open file stream
-  fstream origImageFile(imageFilePath.c_str(), fstream::in | fstream::binary);
   fstream encodedImageFile(encodedImagePath.c_str(), fstream::in | fstream::binary);
   fstream outputFile(outputFilePath.c_str(), fstream::out | fstream::binary);
   
   //Check for valid files
-  if(!origImageFile.good()) {
-    cout << "Bad image file path " << imageFilePath << endl;
-    return;
-  }
   if(!encodedImageFile.good()) {
-    origImageFile.close();
     cout << "Bad data file path " << encodedImagePath << endl;
     return;
   }
   if(!outputFile.good()) {
-    origImageFile.close();
     encodedImageFile.close();
     cout << "Bad output file path " << outputFilePath << endl;
     return;
@@ -242,7 +250,7 @@ void print_help()
   cout << "Default implementation is parallel\n";
   cout << endl;
   cout << "To decode:\n";
-  cout << "stega -decode <image file> <encoded image> <output file name> [-serial | -parallel] \n";
+  cout << "stega -decode <encoded image> <output file name> [-serial | -parallel] \n";
   cout << "Default implementation is parallel\n";
   return;
 }
