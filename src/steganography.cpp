@@ -296,14 +296,14 @@ void decode_serial(const uchar4* const h_encodedImg,
     }
 
     bool bits[8];
-    bits[0] = h_encodedImg[curr_pixel].x;
-    bits[1] = h_encodedImg[curr_pixel].y;
-    bits[2] = h_encodedImg[curr_pixel].z;
-    bits[3] = h_encodedImg[curr_pixel].w;
-    bits[4] = h_encodedImg[curr_pixel].x;
-    bits[5] = h_encodedImg[curr_pixel].y;
-    bits[6] = h_encodedImg[curr_pixel].z;
-    bits[7] = h_encodedImg[curr_pixel].w;
+    bits[0] = h_encodedImg[curr_pixel].x & 1;
+    bits[1] = h_encodedImg[curr_pixel].y & 1;
+    bits[2] = h_encodedImg[curr_pixel].z & 1;
+    bits[3] = h_encodedImg[curr_pixel].w & 1;
+    bits[4] = h_encodedImg[curr_pixel].x & 1;
+    bits[5] = h_encodedImg[curr_pixel].y & 1;
+    bits[6] = h_encodedImg[curr_pixel].z & 1;
+    bits[7] = h_encodedImg[curr_pixel].w & 1;
 
 
     unsigned char byte = 0;
