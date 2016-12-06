@@ -17,16 +17,21 @@ __global__ void decode_per_byte(uchar4* const d_encodedImage, unsigned char* d_e
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
   int curr_pixel = 2*idx;
 
+  if (curr_pixel+1 >= numBytes) {
+    // We don't have a complete byte, return
+    return;
+  }
+
   bool bits[8];
 
-  bits[0] = d_encodedImg[curr_pixel].x & 1;
-  bits[1] = d_encodedImg[curr_pixel].y & 1;
-  bits[2] = d_encodedImg[curr_pixel].z & 1;
-  bits[3] = d_encodedImg[curr_pixel].w & 1;
-  bits[4] = d_encodedImg[curr_pixel + 1].x & 1;
-  bits[5] = d_encodedImg[curr_pixel + 1].y & 1;
-  bits[6] = d_encodedImg[curr_pixel + 1].z & 1;
-  bits[7] = d_encodedImg[curr_pixel + 1].w & 1;
+  bits[0] = d_encodedImage[curr_pixel].x & 1;
+  bits[1] = d_encodedImage[curr_pixel].y & 1;
+  bits[2] = d_encodedImage[curr_pixel].z & 1;
+  bits[3] = d_encodedImage[curr_pixel].w & 1;
+  bits[4] = d_encodedImage[curr_pixel + 1].x & 1;
+  bits[5] = d_encodedImage[curr_pixel + 1].y & 1;
+  bits[6] = d_encodedImage[curr_pixel + 1].z & 1;
+  bits[7] = d_encodedImage[curr_pixel + 1].w & 1;
 
   unsigned char byte = 0;
   for(int i = 0; i < 8; ++i) byte |= ((unsigned char)bits[i] << i);
@@ -77,7 +82,7 @@ void decode_parallel(const uchar4* const h_encodedImage,
   int totalNumThreads = numBytes;
   int numBlocks = ceil((float)totalNumThreads / threadsPerBlock);
 
-  decode_per_byte<<<numBlocks, threadsPerBlock>>>(d_encodedImage, d_encodedData);
+  decode_per_byte<<<numBlocks, threadsPerBlock>>>(d_encodedImage, d_encodedData, numBytes);
 
   cudaMemcpy(h_encodedData, d_encodedData, sizeof(unsigned char) * numBytes, cudaMemcpyDeviceToHost);
 
