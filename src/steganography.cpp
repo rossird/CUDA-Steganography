@@ -239,7 +239,7 @@ void decode(string encodedImagePath, string outputFilePath, ImplementationType i
   
   unsigned long long numPixels = numColsImage * numRowsImage;
   unsigned long long numBits = numPixels/4;
-  unsigned long long numBytes = numBits/8;
+  unsigned long long numBytes = 1;
   unsigned char* encodedData = new unsigned char[numBytes];
   GpuTimer timer;
   timer.Start();
