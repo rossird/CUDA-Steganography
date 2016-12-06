@@ -297,11 +297,21 @@ void decode_serial(const uchar4* const h_encodedImg,
     bits[1] = h_encodedImg[curr_pixel].y & 1;
     bits[2] = h_encodedImg[curr_pixel].z & 1;
     bits[3] = h_encodedImg[curr_pixel].w & 1;
-    bits[4] = h_encodedImg[curr_pixel].x & 1;
-    bits[5] = h_encodedImg[curr_pixel].y & 1;
-    bits[6] = h_encodedImg[curr_pixel].z & 1;
-    bits[7] = h_encodedImg[curr_pixel].w & 1;
+    bits[4] = h_encodedImg[curr_pixel + 1].x & 1;
+    bits[5] = h_encodedImg[curr_pixel + 1].y & 1;
+    bits[6] = h_encodedImg[curr_pixel + 1].z & 1;
+    bits[7] = h_encodedImg[curr_pixel + 1].w & 1;
 
+    cout << "----Printing individual channels----" << endl;
+    cout << h_encodedImg[curr_pixel].x << endl;
+    cout << h_encodedImg[curr_pixel].y << endl;
+    cout << h_encodedImg[curr_pixel].z << endl;
+    cout << h_encodedImg[curr_pixel].w << endl;
+    cout << h_encodedImg[curr_pixel+1].x << endl;
+    cout << h_encodedImg[curr_pixel+1].y << endl;
+    cout << h_encodedImg[curr_pixel+1].z << endl;
+    cout << h_encodedImg[curr_pixel+1].w << endl;
+    cout << "----Printing individual channels ended----" << endl;
 
     cout << "----Printing individual bits----" << endl;
     for (int i = 0; i < 8; ++i) {
