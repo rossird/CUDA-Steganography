@@ -336,7 +336,7 @@ void decode_serial(const uchar4* const h_encodedImg,
 
     cout << "----Printing individual bits----" << endl;
     for (int i = 0; i < 8; ++i) {
-      cout << x.get(i) << endl;
+      cout << x[i] << endl;
     }
     cout << "----Printing individual bits ended----" << endl;
     
