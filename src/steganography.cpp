@@ -1,4 +1,5 @@
 #include <string>
+#include<bitset>
 #include <cuda_runtime.h>
 
 #include <iostream>
@@ -294,7 +295,7 @@ void decode_serial(const uchar4* const h_encodedImg,
       break;
     }
 
-    bool bits[8];
+    bitset<8> x;
     // bits[0] = h_encodedImg[curr_pixel].x & 1;
     // bits[1] = h_encodedImg[curr_pixel].y & 1;
     // bits[2] = h_encodedImg[curr_pixel].z & 1;
@@ -303,15 +304,24 @@ void decode_serial(const uchar4* const h_encodedImg,
     // bits[5] = h_encodedImg[curr_pixel + 1].y & 1;
     // bits[6] = h_encodedImg[curr_pixel + 1].z & 1;
     // bits[7] = h_encodedImg[curr_pixel + 1].w & 1;
+    x.set(0, (h_encodedImg[curr_pixel].x & 1));
+    x.set(1, (h_encodedImg[curr_pixel].y & 1));
+    x.set(2, (h_encodedImg[curr_pixel].z & 1));
+    x.set(3, (h_encodedImg[curr_pixel].w & 1));
+    x.set(4, (h_encodedImg[curr_pixel + 1].x & 1));
+    x.set(5, (h_encodedImg[curr_pixel + 1].y & 1));
+    x.set(6, (h_encodedImg[curr_pixel + 1].z & 1));
+    x.set(7, (h_encodedImg[curr_pixel + 1].w & 1));
 
-    bits[0] = 0;
-    bits[1] = 1;
-    bits[2] = 1;
-    bits[3] = 0;
-    bits[4] = 0;
-    bits[5] = 0;
-    bits[6] = 0;
-    bits[7] = 1;
+    // debug
+    x.set(0, 0);
+    x.set(1, 1);
+    x.set(2, 1);
+    x.set(3, 0);
+    x.set(4, 0);
+    x.set(5, 0);
+    x.set(6, 0);
+    x.set(7, 1);
 
     cout << "----Printing individual channels----" << endl;
     cout << h_encodedImg[curr_pixel].x << endl;
@@ -326,19 +336,19 @@ void decode_serial(const uchar4* const h_encodedImg,
 
     cout << "----Printing individual bits----" << endl;
     for (int i = 0; i < 8; ++i) {
-      cout << bits[i] << endl;
+      cout << x.get(i) << endl;
     }
     cout << "----Printing individual bits ended----" << endl;
-    char byte = 0;
-    for(int i = 0; i < 8; ++i) byte |= (bits[i] << i);
+    
 
-    cout << "Resulting char is " << byte << endl;
+
+    cout << "Resulting char is " << ((unsigned char)x.to_ulong()) << endl;
 
     // 0,1 = 0
     // 2,3 = 1
     // 4,5 = 2
     // To figure out what byte we're writing to
-    h_encodedData[curr_pixel/2] = (unsigned char)byte; 
+    h_encodedData[curr_pixel/2] = ((unsigned char)x.to_ulong()); 
   }
 }
 
