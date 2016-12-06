@@ -303,9 +303,15 @@ void decode_serial(const uchar4* const h_encodedImg,
     bits[7] = h_encodedImg[curr_pixel].w & 1;
 
 
+    cout << "----Printing individual bits----" << endl;
+    for (int i = 0; i < 8; ++i) {
+      cout << bits[i] << endl
+    }
+    cout << "----Printing individual bits ended----" << endl;
     unsigned char byte = 0;
     for(int i = 0; i < 8; ++i) byte |= ((unsigned char) bits[i]) << i;
 
+    cout << "Resulting char is " << (char)byte << endl;
 
     // 0,1 = 0
     // 2,3 = 1
