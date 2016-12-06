@@ -28,9 +28,7 @@ using namespace std;
 
  */
 void decode_parallel(const uchar4* const h_encodedImage,
-                     const uchar4* const h_originalImage,
-                     char* const h_binData,
-                     int numBytesData,
+                     unsigned char* h_encodedData,
                      const size_t numRowsSource, const size_t numColsSource)
 {
 
