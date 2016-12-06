@@ -24,14 +24,18 @@ __global__ void decode_per_byte(uchar4* const d_encodedImage, unsigned char* d_e
 
   bool bits[8];
 
-  bits[0] = d_encodedImage[curr_pixel].x & 1;
-  bits[1] = d_encodedImage[curr_pixel].y & 1;
-  bits[2] = d_encodedImage[curr_pixel].z & 1;
-  bits[3] = d_encodedImage[curr_pixel].w & 1;
-  bits[4] = d_encodedImage[curr_pixel + 1].x & 1;
-  bits[5] = d_encodedImage[curr_pixel + 1].y & 1;
-  bits[6] = d_encodedImage[curr_pixel + 1].z & 1;
-  bits[7] = d_encodedImage[curr_pixel + 1].w & 1;
+  // Let's bring the pixels to local memory
+  uchar4 pixel1 = d_encodedImage[curr_pixel];
+  uchar4 pixel2 = d_encodedImage[curr_pixel + 1];
+
+  bits[0] = pixel1.x & 1;
+  bits[1] = pixel1.y & 1;
+  bits[2] = pixel1.z & 1;
+  bits[3] = pixel1.w & 1;
+  bits[4] = pixel2.x & 1;
+  bits[5] = pixel2.y & 1;
+  bits[6] = pixel2.z & 1;
+  bits[7] = pixel2.w & 1;
 
   unsigned char byte = 0;
   for(int i = 0; i < 8; ++i) byte |= ((unsigned char)bits[i] << i);
