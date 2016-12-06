@@ -36,10 +36,9 @@ __global__ void decode_per_byte(uchar4* const d_encodedImage, unsigned char* d_e
   unsigned char byte = 0;
   for(int i = 0; i < 8; ++i) byte |= ((unsigned char)bits[i] << i);
 
-  // 0,1 = 0
-  // 2,3 = 1
-  // 4,5 = 2
-  // To figure out what byte we're writing to
+  // 0,1 = byte 0
+  // 2,3 = byte 1
+  // 4,5 = byte 2
   d_encodedData[idx] = (unsigned char)byte;
 }
 
@@ -50,18 +49,11 @@ __global__ void decode_per_byte(uchar4* const d_encodedImage, unsigned char* d_e
 | 13 14 16 21 ; 14 19 10 17 |
 | 10 11 10 10 ; 11 11 10 10 |
 
--
-
-| 10 11 12 15 ; 11 255 12 0 |
-| 15 10 13 5  ; 15 14 19 80 | Original image 
-| 12 14 16 21 ; 14 18 10 16 |
-| 10 10 10 10 ; 10 10 10 10 |
-
 =
 
-[ 1001 0110 1111 0000 1010 0101 0100 1100]  Data file
+[ 1100 1010 1100 1010 1001 0101 0100 1100]  Data file
 
-
+Taking the last bit from each channel
  */
 void decode_parallel(const uchar4* const h_encodedImage,
                      unsigned char* h_encodedData,

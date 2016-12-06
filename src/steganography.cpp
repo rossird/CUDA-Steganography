@@ -204,8 +204,18 @@ void encode_serial(const uchar4* const h_sourceImg,
 
 }
 
+
 /**
- *
+| 11 11 12 16 ; 11 0  13 0  |
+| 15 11 14 6  ; 15 14 19 80 | Encoded image (each set of 4 is 1 pixel)
+| 13 14 16 21 ; 14 19 10 17 |
+| 10 11 10 10 ; 11 11 10 10 |
+
+=
+
+[ 1100 1010 1100 1010 1001 0101 0100 1100]  Data file
+
+Taking the last bit from each channel, we get our data file
  */
 void decode(string encodedImagePath, string outputFilePath, ImplementationType iType) {
 
