@@ -8,6 +8,37 @@
 
 using namespace std;
 
+
+
+// 1 byte is stored in 2 pixels
+// extract 1 byte per thread
+__global__ void decode_per_byte(uchar4* const d_encodedImage, unsigned char* d_encodedData, int numBytes) {
+
+  int idx = threadIdx.x + blockDim.x * blockIdx.x;
+  int curr_pixel = 2*idx;
+
+  bool bits[8];
+
+  bits[0] = d_encodedImg[curr_pixel].x & 1;
+  bits[1] = d_encodedImg[curr_pixel].y & 1;
+  bits[2] = d_encodedImg[curr_pixel].z & 1;
+  bits[3] = d_encodedImg[curr_pixel].w & 1;
+  bits[4] = d_encodedImg[curr_pixel + 1].x & 1;
+  bits[5] = d_encodedImg[curr_pixel + 1].y & 1;
+  bits[6] = d_encodedImg[curr_pixel + 1].z & 1;
+  bits[7] = d_encodedImg[curr_pixel + 1].w & 1;
+
+  unsigned char byte = 0;
+  for(int i = 0; i < 8; ++i) byte |= ((unsigned char)bits[i] << i);
+
+  // 0,1 = 0
+  // 2,3 = 1
+  // 4,5 = 2
+  // To figure out what byte we're writing to
+  d_encodedData[idx] = (unsigned char)byte;
+}
+
+
 /**
 | 11 11 12 16 ; 11 0  13 0  |
 | 15 11 14 6  ; 15 14 19 80 | Encoded image (each set of 4 is 1 pixel)
@@ -51,32 +82,4 @@ void decode_parallel(const uchar4* const h_encodedImage,
   cudaMemcpy(h_encodedData, d_encodedData, sizeof(unsigned char) * numBytes, cudaMemcpyDeviceToHost);
 
   cudaFree(d_encodedData);
-}
-
-// 1 byte is stored in 2 pixels
-// extract 1 byte per thread
-__global__ void decode_per_byte(uchar4* const d_encodedImage, unsigned char* d_encodedData, int numBytes) {
-
-  int idx = threadIdx.x + blockDim.x * blockIdx.x;
-  int curr_pixel = 2*idx;
-
-  bool bits[8];
-
-  bits[0] = h_encodedImg[curr_pixel].x & 1;
-  bits[1] = h_encodedImg[curr_pixel].y & 1;
-  bits[2] = h_encodedImg[curr_pixel].z & 1;
-  bits[3] = h_encodedImg[curr_pixel].w & 1;
-  bits[4] = h_encodedImg[curr_pixel + 1].x & 1;
-  bits[5] = h_encodedImg[curr_pixel + 1].y & 1;
-  bits[6] = h_encodedImg[curr_pixel + 1].z & 1;
-  bits[7] = h_encodedImg[curr_pixel + 1].w & 1;
-
-  unsigned char byte = 0;
-  for(int i = 0; i < 8; ++i) byte |= ((unsigned char)bits[i] << i);
-
-  // 0,1 = 0
-  // 2,3 = 1
-  // 4,5 = 2
-  // To figure out what byte we're writing to
-  d_encodedData[idx] = (unsigned char)byte;
 }
