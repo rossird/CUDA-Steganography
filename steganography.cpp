@@ -219,7 +219,7 @@ void decode(string encodedImagePath, string outputFilePath, ImplementationType i
   
   //Open file stream
   fstream encodedImageFile(encodedImagePath.c_str(), fstream::in | fstream::binary);
-  fstream outputFile(outputFilePath.c_str(), fstream::out | fstream::binary);
+  fstream outputFile(outputFilePath.c_str(), fstream::out | fstream::text);
   
   //Check for valid files
   if(!encodedImageFile.good()) {
@@ -232,11 +232,96 @@ void decode(string encodedImagePath, string outputFilePath, ImplementationType i
     return;
   }
   
-  char* data;
+  uchar4* encodedImage;
+  size_t numColsImage;
+  size_t numRowsImage;
+  loadImageRGBA(encodedImagePath, &encodedImage, &numRowsImage, &numColsImage);
   
+  unsigned long long numBits = numPixels/4;
+  unsigned long long numBytes = numBits/8;
+  unsigned char* encodedData = new char[numBytes];
+  GpuTimer timer;
+  timer.Start();
+
+  //Extract the encoded data
+  if (iType == PARALLEL) {
+    //decode parallel
+  } else if (iType == SERIAL) {
+    //decode serial
+    decode_serial(encodedImage, encodedData, numRowsImage, numColsImage);
+  }
+
+  timer.Stop();
+  
+  cout << "Elapsed time: " << timer.Elapsed() << endl;
+
+  // save data file
+  outputFile.write((char *)encodedData, numBytes);
+
+  // Close the file streams
+  encodedImageFile.close();
+  outputFile.close();
+
+  // clean up memory
+  delete[] encodedImage;
+  delete[] encodedData;
   
   return;
 }
+
+/**
+* Decode serial
+*/
+void decode_serial(const uchar4* const h_encodedImg,
+                   unsigned char* h_encodedData,
+                   size_t numRowsSource, size_t numColsSource)
+{
+  
+  unsigned long long numPixels = numRowsSource*numColsSource;
+  unsigned char* encodedData;
+
+  unsigned long long numBits = numPixels/4;
+  unsigned long long numBytes = numBits/8;
+  encodedData = new unsigned char[numBytes];
+
+  // We're jumping 2 pixels at a time to gather a byte of data
+  // If we can't find a full byte at the end, we will drop the incomplete byte
+  // as this is certainly not part of the original data
+  for (unsigned long long curr_pixel = 0; curr_pixel < numPixels; curr_pixel += 2) {
+    if (curr_pixel + 1 >= numPixels) {
+      // If we don't have 8 bits, break
+      break;
+    }
+
+    bool bits[8];
+    bits[0] = h_encodedImg[curr_pixel].x;
+    bits[1] = h_encodedImg[curr_pixel].y;
+    bits[2] = h_encodedImg[curr_pixel].z;
+    bits[3] = h_encodedImg[curr_pixel].w;
+    bits[4] = h_encodedImg[curr_pixel].x;
+    bits[5] = h_encodedImg[curr_pixel].y;
+    bits[6] = h_encodedImg[curr_pixel].z;
+    bits[7] = h_encodedImg[curr_pixel].w;
+
+
+    unsigned char byte = \0;
+    for(int i = 0; i < 8; ++i) byte |= ((unsigned char) bits[i]) << i;
+
+
+    // 0,1 = 0
+    // 2,3 = 1
+    // 4,5 = 2
+    // To figure out what byte we're writing to
+    encodedData[curr_pixel/2] = byte; 
+  }
+
+  memcpy(h_encodedData, encodedData, numBytes);
+
+  delete[] encodedData;
+}
+
+
+
 
 /**
  *  Print the help menu to instruct users of input parameters.
