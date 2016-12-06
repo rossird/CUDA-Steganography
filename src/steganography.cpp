@@ -219,7 +219,7 @@ void decode(string encodedImagePath, string outputFilePath, ImplementationType i
   
   //Open file stream
   fstream encodedImageFile(encodedImagePath.c_str(), fstream::in | fstream::binary);
-  fstream outputFile(outputFilePath.c_str(), fstream::out | fstream::text);
+  fstream outputFile(outputFilePath.c_str(), fstream::out);
   
   //Check for valid files
   if(!encodedImageFile.good()) {
@@ -237,9 +237,10 @@ void decode(string encodedImagePath, string outputFilePath, ImplementationType i
   size_t numRowsImage;
   loadImageRGBA(encodedImagePath, &encodedImage, &numRowsImage, &numColsImage);
   
+  unsigned long long numPixels = numColsImage * numRowsImage;
   unsigned long long numBits = numPixels/4;
   unsigned long long numBytes = numBits/8;
-  unsigned char* encodedData = new char[numBytes];
+  unsigned char* encodedData = new unsigned char[numBytes];
   GpuTimer timer;
   timer.Start();
 
@@ -304,7 +305,7 @@ void decode_serial(const uchar4* const h_encodedImg,
     bits[7] = h_encodedImg[curr_pixel].w;
 
 
-    unsigned char byte = \0;
+    unsigned char byte = 0;
     for(int i = 0; i < 8; ++i) byte |= ((unsigned char) bits[i]) << i;
 
 
