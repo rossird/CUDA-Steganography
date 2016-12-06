@@ -284,7 +284,7 @@ void decode_serial(const uchar4* const h_encodedImg,
 
   unsigned long long numBits = numPixels/4;
   unsigned long long numBytes = numBits/8;
-  encodedData = new unsigned char[numBytes];
+  encodedData = new unsigned char[1];
 
   // We're jumping 2 pixels at a time to gather a byte of data
   // If we can't find a full byte at the end, we will drop the incomplete byte
