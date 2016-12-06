@@ -247,6 +247,7 @@ void decode(string encodedImagePath, string outputFilePath, ImplementationType i
   //Extract the encoded data
   if (iType == PARALLEL) {
     //decode parallel
+    cout << "Parallel Implementation not yet implmented" << endl; 
   } else if (iType == SERIAL) {
     //decode serial
     decode_serial(encodedImage, encodedData, numRowsImage, numColsImage);
@@ -288,7 +289,7 @@ void decode_serial(const uchar4* const h_encodedImg,
   // We're jumping 2 pixels at a time to gather a byte of data
   // If we can't find a full byte at the end, we will drop the incomplete byte
   // as this is certainly not part of the original data
-  for (unsigned long long curr_pixel = 0; curr_pixel < numPixels; curr_pixel += 2) {
+  for (unsigned long long curr_pixel = 0; curr_pixel < 2; curr_pixel += 2) {
     if (curr_pixel + 1 >= numPixels) {
       // If we don't have 8 bits, break
       break;
