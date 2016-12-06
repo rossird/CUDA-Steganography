@@ -280,12 +280,9 @@ void decode_serial(const uchar4* const h_encodedImg,
 {
   
   unsigned long long numPixels = numRowsSource*numColsSource;
-  unsigned char* encodedData;
 
   unsigned long long numBits = numPixels/4;
   unsigned long long numBytes = numBits/8;
-  encodedData = new unsigned char[1];
-
   // We're jumping 2 pixels at a time to gather a byte of data
   // If we can't find a full byte at the end, we will drop the incomplete byte
   // as this is certainly not part of the original data
@@ -314,12 +311,8 @@ void decode_serial(const uchar4* const h_encodedImg,
     // 2,3 = 1
     // 4,5 = 2
     // To figure out what byte we're writing to
-    encodedData[curr_pixel/2] = byte; 
+    h_encodedData[curr_pixel/2] = byte; 
   }
-
-  memcpy(h_encodedData, encodedData, numBytes);
-
-  delete[] encodedData;
 }
 
 
