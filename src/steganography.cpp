@@ -329,16 +329,16 @@ void decode_serial(const uchar4* const h_encodedImg,
       cout << bits[i] << endl;
     }
     cout << "----Printing individual bits ended----" << endl;
-    unsigned char byte = 0;
-    for(int i = 0; i < 8; ++i) byte |= ((unsigned char) bits[i]) << i;
+    char byte = 0;
+    for(int i = 0; i < 8; ++i) byte |= (bits[i] << i);
 
-    cout << "Resulting char is " << (char)byte << endl;
+    cout << "Resulting char is " << byte << endl;
 
     // 0,1 = 0
     // 2,3 = 1
     // 4,5 = 2
     // To figure out what byte we're writing to
-    h_encodedData[curr_pixel/2] = byte; 
+    h_encodedData[curr_pixel/2] = (unsigned char)byte; 
   }
 }
 
