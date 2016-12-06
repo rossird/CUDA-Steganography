@@ -177,6 +177,8 @@ void encode_serial(const uchar4* const h_sourceImg,
       //Offset should be 0 for channel 3, nibble 1 (pixel 1)
       int offset = (7 - 4 * pixel) - channel;
       bool bit = (dataByte >> offset) & 1;
+
+      cout << "Bit is " << bit << endl;
       
       //2 * current byte index plus current pixel for this byte (0 or 1)
       int imgIndex = 2*i + pixel;
