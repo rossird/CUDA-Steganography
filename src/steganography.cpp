@@ -250,7 +250,9 @@ void decode(string encodedImagePath, string outputFilePath, ImplementationType i
   //Extract the encoded data
   if (iType == PARALLEL) {
     //decode parallel
-    cout << "Parallel Implementation not yet implmented" << endl; 
+    decode_parallel(encodedImage,
+                     encodedData,
+                     numRowsImage, numColsImage);
   } else if (iType == SERIAL) {
     //decode serial
     decode_serial(encodedImage, encodedData, numRowsImage, numColsImage);

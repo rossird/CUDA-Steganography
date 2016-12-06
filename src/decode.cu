@@ -32,5 +32,51 @@ void decode_parallel(const uchar4* const h_encodedImage,
                      const size_t numRowsSource, const size_t numColsSource)
 {
 
-                  
+
+  int numBytes = numRowsSource * numColsSource / 2;
+  unsigned char* d_encodedData;
+  cudaMalloc(&d_encodedData, (sizeof(unsigned char) * numBytes));
+
+  uchar4* d_encodedImage;
+  cudaMalloc(&d_encodedImage, sizeof(uchar4) * numRowsSource * numColsSource);
+  cudaMemcpy(d_encodedImage, h_encodedImage, sizeof(uchar4) * numRowsSource * numColsSource, cudaMemcpyHostToDevice);
+
+
+  int threadsPerBlock = 1024;
+  int totalNumThreads = numBytes;
+  int numBlocks = ceil((float)totalNumThreads / threadsPerBlock);
+
+  decode_per_byte<<<numBlocks, threadsPerBlock>>>(d_encodedImage, d_encodedData);
+
+  cudaMemcpy(h_encodedData, d_encodedData, sizeof(unsigned char) * numBytes, cudaMemcpyDeviceToHost);
+
+  cudaFree(d_encodedData);
+}
+
+// 1 byte is stored in 2 pixels
+// extract 1 byte per thread
+__global__ void decode_per_byte(uchar4* const d_encodedImage, unsigned char* d_encodedData, int numBytes) {
+
+  int idx = threadIdx.x + blockDim.x * blockIdx.x;
+  int curr_pixel = 2*idx;
+
+  bool bits[8];
+
+  bits[0] = h_encodedImg[curr_pixel].x & 1;
+  bits[1] = h_encodedImg[curr_pixel].y & 1;
+  bits[2] = h_encodedImg[curr_pixel].z & 1;
+  bits[3] = h_encodedImg[curr_pixel].w & 1;
+  bits[4] = h_encodedImg[curr_pixel + 1].x & 1;
+  bits[5] = h_encodedImg[curr_pixel + 1].y & 1;
+  bits[6] = h_encodedImg[curr_pixel + 1].z & 1;
+  bits[7] = h_encodedImg[curr_pixel + 1].w & 1;
+
+  unsigned char byte = 0;
+  for(int i = 0; i < 8; ++i) byte |= ((unsigned char)bits[i] << i);
+
+  // 0,1 = 0
+  // 2,3 = 1
+  // 4,5 = 2
+  // To figure out what byte we're writing to
+  d_encodedData[idx] = (unsigned char)byte;
 }
