@@ -295,14 +295,23 @@ void decode_serial(const uchar4* const h_encodedImg,
     }
 
     bool bits[8];
-    bits[0] = h_encodedImg[curr_pixel].x & 1;
-    bits[1] = h_encodedImg[curr_pixel].y & 1;
-    bits[2] = h_encodedImg[curr_pixel].z & 1;
-    bits[3] = h_encodedImg[curr_pixel].w & 1;
-    bits[4] = h_encodedImg[curr_pixel + 1].x & 1;
-    bits[5] = h_encodedImg[curr_pixel + 1].y & 1;
-    bits[6] = h_encodedImg[curr_pixel + 1].z & 1;
-    bits[7] = h_encodedImg[curr_pixel + 1].w & 1;
+    // bits[0] = h_encodedImg[curr_pixel].x & 1;
+    // bits[1] = h_encodedImg[curr_pixel].y & 1;
+    // bits[2] = h_encodedImg[curr_pixel].z & 1;
+    // bits[3] = h_encodedImg[curr_pixel].w & 1;
+    // bits[4] = h_encodedImg[curr_pixel + 1].x & 1;
+    // bits[5] = h_encodedImg[curr_pixel + 1].y & 1;
+    // bits[6] = h_encodedImg[curr_pixel + 1].z & 1;
+    // bits[7] = h_encodedImg[curr_pixel + 1].w & 1;
+
+    bits[0] = 0;
+    bits[1] = 1;
+    bits[2] = 1;
+    bits[3] = 0;
+    bits[4] = 0;
+    bits[5] = 0;
+    bits[6] = 0;
+    bits[7] = 1;
 
     cout << "----Printing individual channels----" << endl;
     cout << h_encodedImg[curr_pixel].x << endl;
