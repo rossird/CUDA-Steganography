@@ -166,7 +166,7 @@ void encode_serial(const uchar4* const h_sourceImg,
   //So 1 bit corresponds to 1 byte
   for(int i = 0; i < numBytesData; i++) {
     char dataByte = h_binData[i];
-    
+
     for(int j = 0; j < 8 * sizeof(char); j++) {
     
       //Calculate current channel and pixel
@@ -178,8 +178,6 @@ void encode_serial(const uchar4* const h_sourceImg,
       //Offset should be 0 for channel 3, nibble 1 (pixel 1)
       int offset = (7 - 4 * pixel) - channel;
       bool bit = (dataByte >> offset) & 1;
-
-      cout << "Bit is " << bit << endl;
       
       //2 * current byte index plus current pixel for this byte (0 or 1)
       int imgIndex = 2*i + pixel;
@@ -308,14 +306,14 @@ void decode_serial(const uchar4* const h_encodedImg,
 
     bitset<8> x;
 
-    x.set(0, (h_encodedImg[curr_pixel].x & 1));
-    x.set(1, (h_encodedImg[curr_pixel].y & 1));
-    x.set(2, (h_encodedImg[curr_pixel].z & 1));
-    x.set(3, (h_encodedImg[curr_pixel].w & 1));
-    x.set(4, (h_encodedImg[curr_pixel + 1].x & 1));
-    x.set(5, (h_encodedImg[curr_pixel + 1].y & 1));
-    x.set(6, (h_encodedImg[curr_pixel + 1].z & 1));
-    x.set(7, (h_encodedImg[curr_pixel + 1].w & 1));
+    x.set(7, (h_encodedImg[curr_pixel].x & 1));
+    x.set(6, (h_encodedImg[curr_pixel].y & 1));
+    x.set(5, (h_encodedImg[curr_pixel].z & 1));
+    x.set(4, (h_encodedImg[curr_pixel].w & 1));
+    x.set(3, (h_encodedImg[curr_pixel + 1].x & 1));
+    x.set(2, (h_encodedImg[curr_pixel + 1].y & 1));
+    x.set(1, (h_encodedImg[curr_pixel + 1].z & 1));
+    x.set(0, (h_encodedImg[curr_pixel + 1].w & 1));
 
     // 0,1 = 0
     // 2,3 = 1
