@@ -28,14 +28,14 @@ __global__ void decode_per_byte(uchar4* const d_encodedImage, unsigned char* d_e
   uchar4 pixel1 = d_encodedImage[curr_pixel];
   uchar4 pixel2 = d_encodedImage[curr_pixel + 1];
 
-  bits[0] = pixel1.x & 1;
-  bits[1] = pixel1.y & 1;
-  bits[2] = pixel1.z & 1;
-  bits[3] = pixel1.w & 1;
-  bits[4] = pixel2.x & 1;
-  bits[5] = pixel2.y & 1;
-  bits[6] = pixel2.z & 1;
-  bits[7] = pixel2.w & 1;
+  bits[7] = pixel1.x & 1;
+  bits[6] = pixel1.y & 1;
+  bits[5] = pixel1.z & 1;
+  bits[4] = pixel1.w & 1;
+  bits[3] = pixel2.x & 1;
+  bits[2] = pixel2.y & 1;
+  bits[1] = pixel2.z & 1;
+  bits[0] = pixel2.w & 1;
 
   unsigned char byte = 0;
   for(int i = 0; i < 8; ++i) byte |= ((unsigned char)bits[i] << i);
