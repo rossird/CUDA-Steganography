@@ -220,7 +220,7 @@ Taking the last bit from each channel, we get our data file
 void decode(string encodedImagePath, string outputFilePath, ImplementationType iType) {
 
   //Print some useful information
-  cout << "Decoing\n";
+  cout << "Decoding\n";
   if (iType == PARALLEL) {
     cout << "Using parallel implementation.\n";
   } else if (iType == SERIAL) {
@@ -232,7 +232,7 @@ void decode(string encodedImagePath, string outputFilePath, ImplementationType i
   
   //Open file stream
   fstream encodedImageFile(encodedImagePath.c_str(), fstream::in | fstream::binary);
-  fstream outputFile(outputFilePath.c_str(), fstream::out);
+  fstream outputFile(outputFilePath.c_str(), fstream::out | fstream::binary);
   
   //Check for valid files
   if(!encodedImageFile.good()) {
@@ -251,8 +251,7 @@ void decode(string encodedImagePath, string outputFilePath, ImplementationType i
   loadImageRGBA(encodedImagePath, &encodedImage, &numRowsImage, &numColsImage);
   
   unsigned long long numPixels = numColsImage * numRowsImage;
-  unsigned long long numBits = numPixels/4;
-  unsigned long long numBytes = numPixels/8;
+  unsigned long long numBytes = numPixels/2;
   unsigned char* encodedData = new unsigned char[numBytes];
   GpuTimer timer;
   timer.Start();
@@ -301,7 +300,7 @@ void decode_serial(const uchar4* const h_encodedImg,
   // We're jumping 2 pixels at a time to gather a byte of data
   // If we can't find a full byte at the end, we will drop the incomplete byte
   // as this is certainly not part of the original data
-  for (unsigned long long curr_pixel = 0; curr_pixel < 2; curr_pixel += 2) {
+  for (unsigned long long curr_pixel = 0; curr_pixel < numPixels; curr_pixel += 2) {
     if (curr_pixel + 1 >= numPixels) {
       // If we don't have 8 bits, break
       break;
