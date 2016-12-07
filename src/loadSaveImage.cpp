@@ -43,14 +43,14 @@ void loadImageRGBA(const std::string &filename,
                    uchar4 **imagePtr,
                    size_t *numRows, size_t *numCols)
 {
-  cv::Mat image = cv::imread(filename.c_str(), CV_LOAD_IMAGE_COLOR);
+  cv::Mat image = cv::imread(filename.c_str(), -1);
   if (image.empty()) {
     std::cerr << "Couldn't open file: " << filename << std::endl;
     exit(1);
   }
 
-  if (image.channels() != 3) {
-    std::cerr << "Image must be color!" << std::endl;
+  if (image.channels() != 3 && image.channels() != 4) {
+    std::cerr << "Image must be color! Only " << image.channels() << " channels!" << std::endl;
     exit(1);
   }
 
