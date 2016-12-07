@@ -29,9 +29,13 @@ void decode(std::string encodedImagePath, std::string outputFilePath,
             ImplementationType iType);
 
 
-void loadImageRGBA(const std::string &filename,
-                   uchar4 **imagePtr,
-                   size_t *numRows, size_t *numCols);
+void decode_serial(const uchar4* const h_encodedImg,
+                   unsigned char* h_encodedData,
+                   size_t numRowsSource, size_t numColsSource);
+
+void decode_parallel(const uchar4* const h_encodedImage,
+                     unsigned char* h_encodedData,
+                     const size_t numRowsSource, const size_t numColsSource);
                     
 /* Print the help menu to instruct users of input parameters. */
 void print_help();

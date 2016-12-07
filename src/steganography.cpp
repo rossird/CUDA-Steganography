@@ -1,4 +1,5 @@
 #include <string>
+#include<bitset>
 #include <cuda_runtime.h>
 
 #include <iostream>
@@ -177,6 +178,8 @@ void encode_serial(const uchar4* const h_sourceImg,
       //Offset should be 0 for channel 3, nibble 1 (pixel 1)
       int offset = (7 - 4 * pixel) - channel;
       bool bit = (dataByte >> offset) & 1;
+
+      cout << "Bit is " << bit << endl;
       
       //2 * current byte index plus current pixel for this byte (0 or 1)
       int imgIndex = 2*i + pixel;
@@ -201,8 +204,18 @@ void encode_serial(const uchar4* const h_sourceImg,
 
 }
 
+
 /**
- *
+| 11 11 12 16 ; 11 0  13 0  |
+| 15 11 14 6  ; 15 14 19 80 | Encoded image (each set of 4 is 1 pixel)
+| 13 14 16 21 ; 14 19 10 17 |
+| 10 11 10 10 ; 11 11 10 10 |
+
+=
+
+[ 1100 1010 1100 1010 1001 0101 0100 1100]  Data file
+
+Taking the last bit from each channel, we get our data file
  */
 void decode(string encodedImagePath, string outputFilePath, ImplementationType iType) {
 
@@ -219,7 +232,7 @@ void decode(string encodedImagePath, string outputFilePath, ImplementationType i
   
   //Open file stream
   fstream encodedImageFile(encodedImagePath.c_str(), fstream::in | fstream::binary);
-  fstream outputFile(outputFilePath.c_str(), fstream::out | fstream::binary);
+  fstream outputFile(outputFilePath.c_str(), fstream::out);
   
   //Check for valid files
   if(!encodedImageFile.good()) {
@@ -232,11 +245,89 @@ void decode(string encodedImagePath, string outputFilePath, ImplementationType i
     return;
   }
   
-  char* data;
+  uchar4* encodedImage;
+  size_t numColsImage;
+  size_t numRowsImage;
+  loadImageRGBA(encodedImagePath, &encodedImage, &numRowsImage, &numColsImage);
   
+  unsigned long long numPixels = numColsImage * numRowsImage;
+  unsigned long long numBits = numPixels/4;
+  unsigned long long numBytes = numPixels/8;
+  unsigned char* encodedData = new unsigned char[numBytes];
+  GpuTimer timer;
+  timer.Start();
+
+  //Extract the encoded data
+  if (iType == PARALLEL) {
+    //decode parallel
+    decode_parallel(encodedImage,
+                     encodedData,
+                     numRowsImage, numColsImage);
+  } else if (iType == SERIAL) {
+    //decode serial
+    decode_serial(encodedImage, encodedData, numRowsImage, numColsImage);
+  }
+
+  timer.Stop();
+  
+  cout << "Elapsed time: " << timer.Elapsed() << endl;
+
+  // save data file
+  outputFile.write((char *)encodedData, numBytes);
+
+  // Close the file streams
+  encodedImageFile.close();
+  outputFile.close();
+
+  // clean up memory
+  delete[] encodedImage;
+  delete[] encodedData;
   
   return;
 }
+
+/**
+* Decode serial
+*/
+void decode_serial(const uchar4* const h_encodedImg,
+                   unsigned char* h_encodedData,
+                   size_t numRowsSource, size_t numColsSource)
+{
+  
+  unsigned long long numPixels = numRowsSource*numColsSource;
+
+  unsigned long long numBits = numPixels/4;
+  unsigned long long numBytes = numBits/8;
+  // We're jumping 2 pixels at a time to gather a byte of data
+  // If we can't find a full byte at the end, we will drop the incomplete byte
+  // as this is certainly not part of the original data
+  for (unsigned long long curr_pixel = 0; curr_pixel < 2; curr_pixel += 2) {
+    if (curr_pixel + 1 >= numPixels) {
+      // If we don't have 8 bits, break
+      break;
+    }
+
+    bitset<8> x;
+
+    x.set(0, (h_encodedImg[curr_pixel].x & 1));
+    x.set(1, (h_encodedImg[curr_pixel].y & 1));
+    x.set(2, (h_encodedImg[curr_pixel].z & 1));
+    x.set(3, (h_encodedImg[curr_pixel].w & 1));
+    x.set(4, (h_encodedImg[curr_pixel + 1].x & 1));
+    x.set(5, (h_encodedImg[curr_pixel + 1].y & 1));
+    x.set(6, (h_encodedImg[curr_pixel + 1].z & 1));
+    x.set(7, (h_encodedImg[curr_pixel + 1].w & 1));
+
+    // 0,1 = 0
+    // 2,3 = 1
+    // 4,5 = 2
+    // To figure out what byte we're writing to
+    h_encodedData[curr_pixel/2] = ((unsigned char)x.to_ulong()); 
+  }
+}
+
+
+
 
 /**
  *  Print the help menu to instruct users of input parameters.
